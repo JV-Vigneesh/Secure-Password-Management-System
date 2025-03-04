@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
@@ -13,19 +14,18 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Map;
 
 public class UIController {
 
-    @FXML private TextField siteField;
-    @FXML private TextField usernameField;
+    @FXML private TextField siteField, usernameField;
     @FXML private PasswordField passwordField;
     @FXML private Label statusLabel;
-    @FXML private ListView<String> passwordList;
     @FXML private TextArea savedPasswordsArea;
+    @FXML private ListView<String> passwordList;
 
-    private static HashMap<String, String[]> passwordStorage = new HashMap<>();
+    private static HashMap<String, String> passwordStorage = new HashMap<>();
 
+    // Handles user login
     @FXML
     private void handleLogin(ActionEvent event) {
         String username = usernameField.getText();
@@ -39,6 +39,7 @@ public class UIController {
         }
     }
 
+    // Handles user registration
     @FXML
     private void handleRegister(ActionEvent event) {
         String username = usernameField.getText();
@@ -51,67 +52,35 @@ public class UIController {
         }
     }
 
+    // Saves password to storage
     @FXML
     private void savePassword() {
-        String site = siteField.getText().trim();
-        String username = usernameField.getText().trim();
-        String password = passwordField.getText().trim();
+        String site = siteField.getText();
+        String username = usernameField.getText();
+        String password = passwordField.getText();
 
         if (site.isEmpty() || username.isEmpty() || password.isEmpty()) {
-            showAlert("Error", "All fields are required!", Alert.AlertType.ERROR);
+            showAlert("Error", "Please fill all fields!", Alert.AlertType.ERROR);
             return;
         }
 
+        // Encrypt password before storing
         String encryptedPassword = encryptPassword(password);
-        passwordStorage.put(site, new String[]{username, encryptedPassword});
 
-        loadSavedPasswords();
-        showAlert("Success", "Password saved successfully!", Alert.AlertType.INFORMATION);
+        if (DatabaseHelper.savePassword(username, site, encryptedPassword)) {
+            showAlert("Success", "Password saved successfully!", Alert.AlertType.INFORMATION);
+            passwordStorage.put(site + " | " + username, encryptedPassword);
+            loadSavedPasswords();
+            clearFields();
+        } else {
+            showAlert("Error", "Failed to save password!", Alert.AlertType.ERROR);
+        }
     }
 
-    @FXML
-    private void editPassword() {
-        String selectedEntry = passwordList.getSelectionModel().getSelectedItem();
-        if (selectedEntry == null) {
-            showAlert("Error", "Select a password to edit.", Alert.AlertType.ERROR);
-            return;
-        }
-
-        String site = selectedEntry.split(" \\| ")[0];
-
-        if (!passwordStorage.containsKey(site)) {
-            showAlert("Error", "Entry not found!", Alert.AlertType.ERROR);
-            return;
-        }
-
-        // Populate fields with existing data for editing
-        siteField.setText(site);
-        usernameField.setText(passwordStorage.get(site)[0]);
-        passwordField.setText(passwordStorage.get(site)[1]);  // Display the encrypted password
-
-        // Remove old entry so it can be updated
-        passwordStorage.remove(site);
-        loadSavedPasswords();
-    }
-
-    @FXML
-    private void deletePassword() {
-        String selectedEntry = passwordList.getSelectionModel().getSelectedItem();
-        if (selectedEntry == null) {
-            showAlert("Error", "Select a password to delete.", Alert.AlertType.ERROR);
-            return;
-        }
-
-        String site = selectedEntry.split(" \\| ")[0];
-        passwordStorage.remove(site);
-        loadSavedPasswords();
-        showAlert("Success", "Password deleted successfully!", Alert.AlertType.INFORMATION);
-    }
-
+    // Switches to the dashboard after login
     private void switchToDashboard() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/dashboard.fxml"));
-
             Stage stage = (Stage) usernameField.getScene().getWindow();
             Scene scene = new Scene(fxmlLoader.load());
             stage.setScene(scene);
@@ -122,17 +91,24 @@ public class UIController {
         }
     }
 
+    // Generates a secure random password
     @FXML
     private void generatePassword() {
         String generatedPassword = generateSecurePassword(12);
         passwordField.setText(generatedPassword);
     }
 
+    // Initializes UI and loads saved passwords
     @FXML
     public void initialize() {
-        Platform.runLater(this::loadSavedPasswords);
+        Platform.runLater(() -> {
+            if (savedPasswordsArea != null) {
+                loadSavedPasswords();
+            }
+        });
     }
 
+    // Loads saved passwords into the ListView
     @FXML
     private void loadSavedPasswords() {
         passwordList.getItems().clear();
@@ -140,16 +116,23 @@ public class UIController {
         if (passwordStorage.isEmpty()) {
             statusLabel.setText("No saved passwords found.");
         } else {
-            for (Map.Entry<String, String[]> entry : passwordStorage.entrySet()) {
-                String site = entry.getKey();
-                String username = entry.getValue()[0];
-                String password = entry.getValue()[1];  // Encrypted password
-                passwordList.getItems().add(site + " | " + username + " | " + password);
-            }
+            passwordList.getItems().addAll(passwordStorage.keySet());
             statusLabel.setText("Saved passwords loaded.");
         }
     }
 
+    // Displays selected password details
+    @FXML
+    private void displaySelectedPassword() {
+        String selectedEntry = passwordList.getSelectionModel().getSelectedItem();
+        if (selectedEntry != null && passwordStorage.containsKey(selectedEntry)) {
+            savedPasswordsArea.setText("Site: " + selectedEntry.split(" | ")[0] +
+                    "\nUsername: " + selectedEntry.split(" | ")[1] +
+                    "\nPassword: " + passwordStorage.get(selectedEntry));
+        }
+    }
+
+    // Generates a secure password
     private String generateSecurePassword(int length) {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=<>?";
         SecureRandom random = new SecureRandom();
@@ -162,6 +145,7 @@ public class UIController {
         return password.toString();
     }
 
+    // Encrypts password using SHA-256
     private String encryptPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -173,11 +157,19 @@ public class UIController {
         }
     }
 
+    // Displays alert messages
     private void showAlert(String title, String message, Alert.AlertType type) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    // Clears input fields after saving password
+    private void clearFields() {
+        siteField.clear();
+        usernameField.clear();
+        passwordField.clear();
     }
 }
