@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="de.svenkubiak.jBCrypt" type="repository">
+    <properties maven-id="de.svenkubiak:jBCrypt:0.4.3" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/jBCrypt-0.4.3.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/lib/jBCrypt-0.4.3-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/lib/jBCrypt-0.4.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

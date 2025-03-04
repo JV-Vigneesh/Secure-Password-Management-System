@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="565.0" prefWidth="502.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.UIController">
+    <VBox alignment="CENTER" layoutX="28.0" layoutY="33.0" prefHeight="500" prefWidth="445.0" spacing="10">
+        <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Secure Password Manager" />
+
+        <!-- Add Password Section -->
+        <VBox spacing="5">
+            <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Add New Password" />
+            <TextField fx:id="usernameField" prefHeight="26.0" prefWidth="364.0" promptText="Enter Username" />
+            <PasswordField fx:id="passwordField" promptText="Enter Password" />
+            <Button fx:id="generatePasswordBtn" onAction="#generatePassword" text="Generate Password" />
+            <Button onAction="#savePassword" text="Save Password" />
+            <TextArea fx:id="savedPasswordsArea" />
+        </VBox>
+
+        <Separator />
+
+        <!-- Show Saved Passwords -->
+        <VBox spacing="5">
+            <Label fx:id="statusLabel" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Saved Passwords" />
+            <ListView fx:id="passwordList" />
+            <Button onAction="#loadSavedPasswords" text="Refresh" />
+
+
+        </VBox>
+    </VBox>
+</AnchorPane>
