@@ -1,37 +1,43 @@
 package application;
 
-import org.mindrot.jbcrypt.BCrypt;
-import java.util.*;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-
 public class PasswordManager {
 
-    private final Map<String, String> passwordStorage = new HashMap<>();
-
-    public boolean savePassword(String username, String password) {
-        if (passwordStorage.containsKey(username)) {
-            return false; // Username already exists
+    public static String encryptPassword(String password) {
+        try {
+            byte[] salt = generateSalt();
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(salt);
+            byte[] hashedPassword = md.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(salt) + "$" + Base64.getEncoder().encodeToString(hashedPassword);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(12));
-        passwordStorage.put(username, hashedPassword);
-        return true;
     }
 
-    public List<String> getSavedPasswords() {
-        List<String> savedList = new ArrayList<>();
-        for (Map.Entry<String, String> entry : passwordStorage.entrySet()) {
-            savedList.add(entry.getKey() + ": " + entry.getValue());
+    public static boolean verifyPassword(String password, String storedHash) {
+        try {
+            String[] parts = storedHash.split("\\$");
+            byte[] salt = Base64.getDecoder().decode(parts[0]);
+            byte[] storedPassword = Base64.getDecoder().decode(parts[1]);
+
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(salt);
+            byte[] hashedPassword = md.digest(password.getBytes());
+
+            return MessageDigest.isEqual(hashedPassword, storedPassword);
+        } catch (Exception e) {
+            return false;
         }
-        return savedList;
     }
 
-    public String generateSecurePassword() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[12];
-        random.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    private static byte[] generateSalt() {
+        byte[] salt = new byte[16];
+        new SecureRandom().nextBytes(salt);
+        return salt;
     }
 }

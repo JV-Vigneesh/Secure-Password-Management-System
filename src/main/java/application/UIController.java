@@ -7,38 +7,35 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
 
 public class UIController {
 
-    @FXML
-    private TextField usernameField;
+    @FXML private TextField siteField;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Label statusLabel;
+    @FXML private ListView<String> passwordList;
+    @FXML private TextArea savedPasswordsArea;
 
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private Label statusLabel; // Optional: To show save status
-
-    @FXML
-    private TextArea savedPasswordsArea; // Ensure this is linked to FXML
-
-
-    // Simulating user storage (Replace with actual database or file storage)
-    private static HashMap<String, String> userDatabase = new HashMap<>();
+    private static HashMap<String, String[]> passwordStorage = new HashMap<>();
 
     @FXML
     private void handleLogin(ActionEvent event) {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        if (userDatabase.containsKey(username) && userDatabase.get(username).equals(password)) {
-            showAlert("Login Successful!", "Welcome " + username, Alert.AlertType.INFORMATION);
+        if (DatabaseHelper.authenticateUser(username, password)) {
+            showAlert("Login Successful", "Welcome " + username, Alert.AlertType.INFORMATION);
             switchToDashboard();
         } else {
-            showAlert("Login Failed", "Invalid username or password", Alert.AlertType.ERROR);
+            showAlert("Login Failed", "Invalid credentials", Alert.AlertType.ERROR);
         }
     }
 
@@ -47,16 +44,132 @@ public class UIController {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showAlert("Registration Failed", "Username and password cannot be empty", Alert.AlertType.WARNING);
+        if (DatabaseHelper.registerUser(username, password)) {
+            showAlert("Registration Successful", "You can now log in", Alert.AlertType.INFORMATION);
+        } else {
+            showAlert("Registration Failed", "Username already exists", Alert.AlertType.ERROR);
+        }
+    }
+
+    @FXML
+    private void savePassword() {
+        String site = siteField.getText().trim();
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
+
+        if (site.isEmpty() || username.isEmpty() || password.isEmpty()) {
+            showAlert("Error", "All fields are required!", Alert.AlertType.ERROR);
             return;
         }
 
-        if (userDatabase.containsKey(username)) {
-            showAlert("Registration Failed", "Username already exists", Alert.AlertType.ERROR);
+        String encryptedPassword = encryptPassword(password);
+        passwordStorage.put(site, new String[]{username, encryptedPassword});
+
+        loadSavedPasswords();
+        showAlert("Success", "Password saved successfully!", Alert.AlertType.INFORMATION);
+    }
+
+    @FXML
+    private void editPassword() {
+        String selectedEntry = passwordList.getSelectionModel().getSelectedItem();
+        if (selectedEntry == null) {
+            showAlert("Error", "Select a password to edit.", Alert.AlertType.ERROR);
+            return;
+        }
+
+        String site = selectedEntry.split(" \\| ")[0];
+
+        if (!passwordStorage.containsKey(site)) {
+            showAlert("Error", "Entry not found!", Alert.AlertType.ERROR);
+            return;
+        }
+
+        // Populate fields with existing data for editing
+        siteField.setText(site);
+        usernameField.setText(passwordStorage.get(site)[0]);
+        passwordField.setText(passwordStorage.get(site)[1]);  // Display the encrypted password
+
+        // Remove old entry so it can be updated
+        passwordStorage.remove(site);
+        loadSavedPasswords();
+    }
+
+    @FXML
+    private void deletePassword() {
+        String selectedEntry = passwordList.getSelectionModel().getSelectedItem();
+        if (selectedEntry == null) {
+            showAlert("Error", "Select a password to delete.", Alert.AlertType.ERROR);
+            return;
+        }
+
+        String site = selectedEntry.split(" \\| ")[0];
+        passwordStorage.remove(site);
+        loadSavedPasswords();
+        showAlert("Success", "Password deleted successfully!", Alert.AlertType.INFORMATION);
+    }
+
+    private void switchToDashboard() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/dashboard.fxml"));
+
+            Stage stage = (Stage) usernameField.getScene().getWindow();
+            Scene scene = new Scene(fxmlLoader.load());
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException e) {
+            showAlert("Error", "Failed to load dashboard", Alert.AlertType.ERROR);
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void generatePassword() {
+        String generatedPassword = generateSecurePassword(12);
+        passwordField.setText(generatedPassword);
+    }
+
+    @FXML
+    public void initialize() {
+        Platform.runLater(this::loadSavedPasswords);
+    }
+
+    @FXML
+    private void loadSavedPasswords() {
+        passwordList.getItems().clear();
+
+        if (passwordStorage.isEmpty()) {
+            statusLabel.setText("No saved passwords found.");
         } else {
-            userDatabase.put(username, password);
-            showAlert("Registration Successful", "You can now log in", Alert.AlertType.INFORMATION);
+            for (Map.Entry<String, String[]> entry : passwordStorage.entrySet()) {
+                String site = entry.getKey();
+                String username = entry.getValue()[0];
+                String password = entry.getValue()[1];  // Encrypted password
+                passwordList.getItems().add(site + " | " + username + " | " + password);
+            }
+            statusLabel.setText("Saved passwords loaded.");
+        }
+    }
+
+    private String generateSecurePassword(int length) {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=<>?";
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            password.append(characters.charAt(random.nextInt(characters.length())));
+        }
+
+        return password.toString();
+    }
+
+    private String encryptPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -67,64 +180,4 @@ public class UIController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
-    private void switchToDashboard() {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("dashboard.fxml"));
-            Stage stage = (Stage) usernameField.getScene().getWindow();
-            Scene scene = new Scene(fxmlLoader.load());
-            stage.setScene(scene);
-            stage.show();
-        } catch (IOException e) {
-            showAlert("Error", "Failed to load dashboard", Alert.AlertType.ERROR);
-            e.printStackTrace();
-        }
-    }
-    @FXML
-    private void generatePassword() {
-        String generatedPassword = "P@ssw0rd"; // Replace with actual password generation logic
-        passwordField.setText(generatedPassword);
-    }
-
-    @FXML
-    private void savePassword() {
-        String password = passwordField.getText();
-        if (password.isEmpty()) {
-            statusLabel.setText("No password to save!");
-        } else {
-            // Add logic to save password (e.g., store in HashTable)
-            statusLabel.setText("Password saved successfully!");
-        }
-    }
-
-    @FXML
-    public void initialize() {
-        System.out.println("UIController initialized!");
-        Platform.runLater(() -> {
-            if (savedPasswordsArea != null) {
-                System.out.println("savedPasswordsArea is properly initialized.");
-                loadSavedPasswords();
-            } else {
-                System.err.println("ERROR: savedPasswordsArea is NULL! Check FXML binding.");
-            }
-        });
-    }
-
-
-
-    @FXML
-    private void loadSavedPasswords() {
-        System.out.println("Loading saved passwords..."); // Debugging
-
-        List<String> savedPasswords = List.of("ExamplePass1", "ExamplePass2");
-
-        if (savedPasswords.isEmpty()) {
-            statusLabel.setText("No saved passwords found.");
-        } else {
-            savedPasswordsArea.clear(); // Ensure it's empty before adding
-            savedPasswords.forEach(password -> savedPasswordsArea.appendText(password + "\n"));
-            statusLabel.setText("Saved passwords loaded.");
-        }
-    }
-
 }

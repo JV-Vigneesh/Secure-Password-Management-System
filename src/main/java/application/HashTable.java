@@ -2,19 +2,9 @@ package application;
 
 import java.util.LinkedList;
 
-class HashNode {
-    String key;
-    String value;
-
-    public HashNode(String key, String value) {
-        this.key = key;
-        this.value = value;
-    }
-}
-
-public class HashTable {
-    private final int SIZE = 256;
-    private LinkedList<HashNode>[] table;
+class HashTable {
+    private static final int SIZE = 100;
+    private LinkedList<Entry>[] table;
 
     public HashTable() {
         table = new LinkedList[SIZE];
@@ -23,20 +13,37 @@ public class HashTable {
         }
     }
 
-    private int getHash(String key) {
-        return key.hashCode() % SIZE;
-    }
-
     public void put(String key, String value) {
-        int index = getHash(key);
-        table[index].add(new HashNode(key, value));
+        int index = hashFunction(key);
+        for (Entry entry : table[index]) {
+            if (entry.key.equals(key)) {
+                entry.value = value;
+                return;
+            }
+        }
+        table[index].add(new Entry(key, value));
     }
 
     public String get(String key) {
-        int index = getHash(key);
-        for (HashNode node : table[index]) {
-            if (node.key.equals(key)) return node.value;
+        int index = hashFunction(key);
+        for (Entry entry : table[index]) {
+            if (entry.key.equals(key)) {
+                return entry.value;
+            }
         }
         return null;
+    }
+
+    private int hashFunction(String key) {
+        return Math.abs(key.hashCode()) % SIZE;
+    }
+
+    static class Entry {
+        String key, value;
+
+        Entry(String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
     }
 }
