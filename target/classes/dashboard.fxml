@@ -3,37 +3,30 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="520.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.UIController">
-    <VBox alignment="CENTER" layoutX="20.0" layoutY="20.0" prefHeight="580" prefWidth="480.0" spacing="15" style="-fx-padding: 20px;">
+<AnchorPane prefHeight="565.0" prefWidth="502.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.UIController">
+    <VBox alignment="CENTER" layoutX="28.0" layoutY="33.0" prefHeight="500" prefWidth="445.0" spacing="15" style="-fx-padding: 20px;">
 
-        <!-- Title -->
         <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Secure Password Manager" />
 
         <!-- Add Password Section -->
         <VBox spacing="10" style="-fx-padding: 10px; -fx-border-color: #ccc; -fx-border-radius: 5px;">
             <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Add New Password" />
-
-            <TextField fx:id="siteField" promptText="Enter Website/App Name" />
             <TextField fx:id="usernameField" promptText="Enter Username" />
             <PasswordField fx:id="passwordField" promptText="Enter Password" />
 
             <HBox spacing="10">
                 <Button fx:id="generatePasswordBtn" onAction="#generatePassword" text="Generate Password" />
-                <Button fx:id="savePasswordBtn" onAction="#savePassword" text="Save Password" />
+                <Button onAction="#savePassword" text="Save Password" />
             </HBox>
         </VBox>
 
         <Separator />
 
-        <!-- Saved Passwords Section -->
+        <!-- Show Saved Passwords -->
         <VBox spacing="10" style="-fx-padding: 10px;">
             <Label fx:id="statusLabel" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Saved Passwords" />
-
-            <ListView fx:id="passwordList" prefHeight="150" onMouseClicked="#displaySelectedPassword"/>
-
-            <Button onAction="#loadSavedPasswords" text="Refresh List" />
-
-            <TextArea fx:id="savedPasswordsArea" promptText="Selected Password Details" prefHeight="100" prefWidth="400" editable="false"/>
+            <ListView fx:id="passwordList" prefHeight="150" />
+            <Button onAction="#loadSavedPasswords" text="Refresh" />
         </VBox>
     </VBox>
 </AnchorPane>
