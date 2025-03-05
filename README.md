@@ -30,48 +30,13 @@ This project implements a secure password management system using hashing for pa
 
 ### Prerequisites
 
-* [List any required software, e.g., Python 3.x, Node.js, database server]
+* JAVA JDK v21
+* and more to be updated
 * Make sure you have the necessary libraries installed.
 
-### Installation
 
-1.  Clone the repository:
 
-    ```bash
-    git clone [repository URL]
-    cd [repository directory]
-    ```
-
-2.  Install dependencies:
-
-    ```bash
-    # Example for Python (using pip)
-    pip install -r requirements.txt
-
-    # Example for Node.js (using npm or yarn)
-    npm install
-    # or
-    yarn install
-    ```
-
-3.  Set up the database:
-
-    * Create a database and configure the connection settings in the application's configuration file.
-    * Run any database migrations or schema creation scripts.
-
-4.  Run the application:
-
-    ```bash
-    # Example for Python
-    python app.py
-
-    # Example for Node.js
-    node server.js
-    ```
-
-5.  Open your web browser and navigate to the application's URL.
-
-## Usage
+## Interface
 
 1.  **Login/Registration:**
     * If you are a new user, register an account.
