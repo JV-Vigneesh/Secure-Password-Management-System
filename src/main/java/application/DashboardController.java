@@ -6,6 +6,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DashboardController {
@@ -31,24 +36,18 @@ public class DashboardController {
         passwordField.setText(PasswordManager.generateSecurePassword(12));
     }
 
-    @FXML
-    private void savePassword() {
-        String site = siteField.getText();
-        String password = passwordField.getText();
-
-        if (site.isEmpty() || password.isEmpty()) {
-            showAlert("Error", "Site and Password cannot be empty", Alert.AlertType.ERROR);
-            return;
-        }
-
-        // Encrypt password before saving
-        String encryptedPassword = PasswordManager.encryptPassword(password);
-
-        if (DatabaseHelper.savePassword(currentUsername, site, password, encryptedPassword)) {
-            showAlert("Success", "Password saved successfully!", Alert.AlertType.INFORMATION);
-            loadSavedPasswords(); // Refresh password list
-        } else {
-            showAlert("Error", "Failed to save password!", Alert.AlertType.ERROR);
+    public static boolean savePassword(String username, String site, String encryptedPassword) { // ✅ Fix function signature
+        String sql = "INSERT INTO passwords (username, site, encrypted_password) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, site);
+            pstmt.setString(3, encryptedPassword);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -65,12 +64,46 @@ public class DashboardController {
 
     @FXML
     private void loadSavedPasswords() {
-        passwordList.getItems().clear();
-        List<String> savedPasswords = DatabaseHelper.getSavedPasswords(currentUsername);
-        passwordList.getItems().addAll(savedPasswords);
+        String username = AuthManager.getLoggedInUser();
+        if (username == null || username.isEmpty()) {
+            showAlert("Error", "User not logged in!", Alert.AlertType.ERROR);
+            return;
+        }
+
+        List<String> passwords = DatabaseHelper.getSavedPasswords(username);
+        ObservableList<PasswordEntry> passwordEntries = FXCollections.observableArrayList();
+
+        for (String entry : passwords) {
+            String[] parts = entry.split(" \\| ");
+            if (parts.length == 2) {
+                passwordEntries.add(new PasswordEntry(parts[0], username, parts[1]));
+            }
+        }
+
+        passwordTable.setItems(passwordEntries);
     }
 
-
+    public static List<String> getSavedPasswords(String username) {
+        List<String> passwords = new ArrayList<>();
+        String sql = "SELECT site, encrypted_password FROM passwords WHERE username = ?";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String site = rs.getString("site");
+                String decryptedPassword = PasswordManager.decryptPassword(rs.getString("encrypted_password"));
+                if (!decryptedPassword.equals("Decryption Error!")) { // Prevent corrupt passwords
+                    passwords.add(site + " | " + decryptedPassword);
+                } else {
+                    passwords.add(site + " | (Error: Cannot decrypt)");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return passwords;
+    }
 
 
     @FXML

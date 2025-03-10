@@ -23,12 +23,15 @@ public class UIController {
         String password = passwordField.getText();
 
         if (AuthManager.authenticateUser(username, password)) {
+            AuthManager.setLoggedInUser(username); // ✅ Store the logged-in user
             showAlert("Success", "Login successful!", Alert.AlertType.INFORMATION);
             switchToDashboard();
         } else {
             showAlert("Error", "Invalid username or password!", Alert.AlertType.ERROR);
         }
     }
+
+
 
     @FXML
     private void handleRegister(ActionEvent event) {
@@ -75,13 +78,20 @@ public class UIController {
 
     private void switchToDashboard() {
         try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/dashboard.fxml"));
+            Parent root = loader.load();
+
+            DashboardController controller = loader.getController();
+            controller.setLoggedInUser(AuthManager.getLoggedInUser()); // ✅ Pass logged-in user
+
             Stage stage = (Stage) usernameField.getScene().getWindow();
-            stage.setScene(new Scene(FXMLLoader.load(getClass().getResource("/dashboard.fxml"))));
+            stage.setScene(new Scene(root));
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 
     private void showAlert(String title, String message, Alert.AlertType type) {
         Alert alert = new Alert(type);

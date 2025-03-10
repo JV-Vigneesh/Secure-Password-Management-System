@@ -23,10 +23,8 @@ public class DatabaseHelper {
     }
 
     public static boolean registerUser(String username, String password) {
-        // Trim the password before hashing
         password = password.trim();
-
-        String hashedPassword = PasswordManager.hashPassword(password);
+        String hashedPassword = PasswordManager.hashPassword(password); // Hash only here
         System.out.println("Storing Hashed Password for user: " + hashedPassword);
 
         String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
@@ -44,8 +42,6 @@ public class DatabaseHelper {
     }
 
     public static boolean authenticateUser(String username, String password) {
-        password = password.trim();  // Trim input password
-
         String sql = "SELECT password FROM users WHERE username = ?";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -54,7 +50,7 @@ public class DatabaseHelper {
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                String storedHashedPassword = rs.getString("password").trim();
+                String storedHashedPassword = rs.getString("password"); // Don't trim
                 System.out.println("Stored Hashed Password for user: " + storedHashedPassword);
 
                 boolean match = PasswordManager.verifyPassword(password, storedHashedPassword);
@@ -67,13 +63,14 @@ public class DatabaseHelper {
         return false;
     }
 
-    public static boolean savePassword(String username, String site, String password, String encryptedPassword) {
+    public static boolean savePassword(String username, String site, String password) {
+        String encryptedPassword = PasswordManager.encryptPassword(password); // Encrypt before saving
         String sql = "INSERT INTO passwords (username, site, encrypted_password) VALUES (?, ?, ?)";
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.setString(2, site);
-            pstmt.setString(3, encryptedPassword); // Encrypt the password before storing
+            pstmt.setString(3, encryptedPassword);
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -81,6 +78,7 @@ public class DatabaseHelper {
             return false;
         }
     }
+
 
     public static List<String> getSavedPasswords(String username) {
         List<String> passwords = new ArrayList<>();
