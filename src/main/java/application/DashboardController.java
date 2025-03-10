@@ -1,45 +1,112 @@
 package application;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+import java.util.List;
 
 public class DashboardController {
 
-    @FXML
-    private TextField newUsernameField;
+    @FXML private TextField siteField;
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private TableView<PasswordEntry> passwordTable;
+    @FXML private TableColumn<PasswordEntry, String> siteColumn;
+    @FXML private TableColumn<PasswordEntry, String> usernameColumn;
+    @FXML private TableColumn<PasswordEntry, String> passwordColumn;
 
-    @FXML
-    private TextField newPasswordField;
+    private ObservableList<PasswordEntry> passwordData = FXCollections.observableArrayList();
+    private String loggedInUser;
 
-    @FXML
-    private ListView<String> passwordList;
+    public void setLoggedInUser(String username) {
+        this.loggedInUser = username;
+        loadSavedPasswords();
+    }
 
     @FXML
     private void generatePassword() {
-        // Placeholder for password generation logic
-        newPasswordField.setText("Generated@123");
+        passwordField.setText(PasswordManager.generateSecurePassword(12));
     }
 
     @FXML
     private void savePassword() {
-        String username = newUsernameField.getText();
-        String password = newPasswordField.getText();
+        String site = siteField.getText();
+        String password = passwordField.getText();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showAlert("Error", "Username or Password cannot be empty!", Alert.AlertType.ERROR);
+        if (site.isEmpty() || password.isEmpty()) {
+            showAlert("Error", "Site and Password cannot be empty", Alert.AlertType.ERROR);
             return;
         }
 
-        passwordList.getItems().add(username + ": " + password);
-        newUsernameField.clear();
-        newPasswordField.clear();
+        // Encrypt password before saving
+        String encryptedPassword = PasswordManager.encryptPassword(password);
+
+        if (DatabaseHelper.savePassword(currentUsername, site, password, encryptedPassword)) {
+            showAlert("Success", "Password saved successfully!", Alert.AlertType.INFORMATION);
+            loadSavedPasswords(); // Refresh password list
+        } else {
+            showAlert("Error", "Failed to save password!", Alert.AlertType.ERROR);
+        }
     }
+
+
+    @FXML
+    private ListView<String> passwordList; // Ensure this matches FXML
+
+    private String currentUsername; // Store logged-in user
+
+    public void setCurrentUsername(String username) {
+        this.currentUsername = username;
+    }
+
 
     @FXML
     private void loadSavedPasswords() {
-        // Placeholder: Load saved passwords from a real database or storage.
+        passwordList.getItems().clear();
+        List<String> savedPasswords = DatabaseHelper.getSavedPasswords(currentUsername);
+        passwordList.getItems().addAll(savedPasswords);
+    }
+
+
+
+
+    @FXML
+    private void editSelectedPassword() {
+        PasswordEntry selected = passwordTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Error", "Select a password to edit!", Alert.AlertType.ERROR);
+            return;
+        }
+
+        siteField.setText(selected.getSite());
+        usernameField.setText(selected.getUsername());
+        passwordField.setText(selected.getPassword());
+
+        if (DatabaseHelper.updatePassword(loggedInUser, selected.getSite(), selected.getUsername(), passwordField.getText())) {
+            showAlert("Success", "Password updated successfully!", Alert.AlertType.INFORMATION);
+            loadSavedPasswords(); // Refresh table
+        } else {
+            showAlert("Error", "Failed to update password!", Alert.AlertType.ERROR);
+        }
+    }
+
+    @FXML
+    private void deleteSelectedPassword() {
+        PasswordEntry selected = passwordTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Error", "Select a password to delete!", Alert.AlertType.ERROR);
+            return;
+        }
+
+        if (DatabaseHelper.deletePassword(loggedInUser, selected.getSite())) {
+            showAlert("Success", "Password deleted successfully!", Alert.AlertType.INFORMATION);
+            loadSavedPasswords(); // Refresh table
+        } else {
+            showAlert("Error", "Failed to delete password!", Alert.AlertType.ERROR);
+        }
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {

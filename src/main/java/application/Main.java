@@ -2,28 +2,26 @@ package application;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class Main extends Application {
     @Override
-    public void start(Stage primaryStage) {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/login.fxml"));
-            Scene scene = new Scene(fxmlLoader.load());
-            primaryStage.setTitle("Secure Password Manager - Login");
-            primaryStage.setScene(scene);
-            primaryStage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("ERROR: Failed to load login.fxml!");
-        }
-    }
+    public void start(Stage primaryStage) throws IOException {
+        DatabaseHelper.initializeDatabase(); // Ensure DB is set up before UI loads
+        Parent root = FXMLLoader.load(getClass().getResource("/login.fxml"));
+        primaryStage.setScene(new Scene(root));
+        primaryStage.show();
+        String password = "user";
+        String hashedPassword = PasswordManager.hashPassword(password);
+        System.out.println("Hashed Password: " + hashedPassword);
 
-    public static void main(String[] args) {
-        DatabaseHelper dbHelper = new DatabaseHelper();
-        dbHelper.initializeDatabase();
-        launch(args);
+        boolean match = PasswordManager.verifyPassword(password, hashedPassword);
+        System.out.println("Password Match: " + match);  // Should print true
     }
-
 }
+
+

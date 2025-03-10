@@ -1,21 +1,22 @@
 package application;
 
-import org.mindrot.jbcrypt.BCrypt;
-
 public class AuthManager {
-    private HashTable userTable = new HashTable();
+    private static String loggedInUser;
 
-    public boolean register(String username, String password) {
-        if (userTable.get(username) != null) {
-            return false; // User already exists
-        }
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-        userTable.put(username, hashedPassword);
-        return true;
+    public static boolean registerUser(String username, String password) {
+        String hashedPassword = PasswordManager.hashPassword(password);
+        return DatabaseHelper.registerUser(username, hashedPassword);
     }
 
-    public boolean authenticate(String username, String password) {
-        String storedHash = userTable.get(username);
-        return storedHash != null && BCrypt.checkpw(password, storedHash);
+    public static boolean authenticateUser(String username, String password) {
+        return DatabaseHelper.authenticateUser(username, password);
+    }
+
+    public static void setLoggedInUser(String username) {
+        loggedInUser = username;
+    }
+
+    public static String getLoggedInUser() {
+        return loggedInUser;
     }
 }

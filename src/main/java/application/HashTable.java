@@ -2,9 +2,11 @@ package application;
 
 import java.util.LinkedList;
 
-class HashTable {
+
+
+public class HashTable<K, V> {
     private static final int SIZE = 100;
-    private LinkedList<Entry>[] table;
+    private LinkedList<Entry<K, V>>[] table;
 
     public HashTable() {
         table = new LinkedList[SIZE];
@@ -12,21 +14,30 @@ class HashTable {
             table[i] = new LinkedList<>();
         }
     }
+    private static HashTable<String, String> passwordCache = new HashTable<>();
 
-    public void put(String key, String value) {
-        int index = hashFunction(key);
-        for (Entry entry : table[index]) {
+    public static void cachePassword(String site, String password) {
+        passwordCache.put(site, password);
+    }
+
+    private int getHash(K key) {
+        return Math.abs(key.hashCode() % SIZE);
+    }
+
+    public void put(K key, V value) {
+        int index = getHash(key);
+        for (Entry<K, V> entry : table[index]) {
             if (entry.key.equals(key)) {
                 entry.value = value;
                 return;
             }
         }
-        table[index].add(new Entry(key, value));
+        table[index].add(new Entry<>(key, value));
     }
 
-    public String get(String key) {
-        int index = hashFunction(key);
-        for (Entry entry : table[index]) {
+    public V get(K key) {
+        int index = getHash(key);
+        for (Entry<K, V> entry : table[index]) {
             if (entry.key.equals(key)) {
                 return entry.value;
             }
@@ -34,14 +45,16 @@ class HashTable {
         return null;
     }
 
-    private int hashFunction(String key) {
-        return Math.abs(key.hashCode()) % SIZE;
+    public void remove(K key) {
+        int index = getHash(key);
+        table[index].removeIf(entry -> entry.key.equals(key));
     }
 
-    static class Entry {
-        String key, value;
+    private static class Entry<K, V> {
+        K key;
+        V value;
 
-        Entry(String key, String value) {
+        Entry(K key, V value) {
             this.key = key;
             this.value = value;
         }
