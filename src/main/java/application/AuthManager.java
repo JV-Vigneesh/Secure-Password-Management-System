@@ -4,8 +4,7 @@ public class AuthManager {
     private static String loggedInUser;
 
     public static boolean registerUser(String username, String password) {
-        String hashedPassword = PasswordManager.hashPassword(password);
-        return DatabaseHelper.registerUser(username, hashedPassword);
+        return DatabaseHelper.registerUser(username, password);
     }
 
     public static boolean authenticateUser(String username, String password) {
