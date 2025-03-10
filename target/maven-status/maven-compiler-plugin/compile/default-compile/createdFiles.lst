@@ -1,0 +1,9 @@
+application\AuthManager.class
+application\HashTable$Entry.class
+application\DashboardController.class
+application\DatabaseHelper.class
+application\User.class
+application\UIController.class
+application\Main.class
+application\HashTable.class
+application\PasswordManager.class
