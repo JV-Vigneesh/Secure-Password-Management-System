@@ -11,10 +11,36 @@ import java.util.Base64;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class PasswordManager {
-    private static final String SECRET_KEY = "MySuperSecretKey";
-
+    private static final String SECRET_KEY = "MySuperSecretKey"; // 16-byte AES key
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=<>?";
     private static final SecureRandom random = new SecureRandom();
+
+    public static String encryptPassword(String password) {
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(SECRET_KEY.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+            byte[] encryptedBytes = cipher.doFinal(password.getBytes());
+            return Base64.getEncoder().encodeToString(encryptedBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static String decryptPassword(String encryptedPassword) {
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(SECRET_KEY.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec);
+            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedPassword));
+            System.out.println("Decrypting password: " + encryptedPassword);
+            return new String(decryptedBytes);
+        } catch (Exception e) {
+            System.err.println("Decryption failed!");
+            return "Decryption Error!";
+        }
+    }
 
     // Derive a 16-byte AES key from the secret key
     private static SecretKeySpec getAESKey() throws Exception {
@@ -35,40 +61,11 @@ public class PasswordManager {
 
     // Hash password using BCrypt
     public static String hashPassword(String password) {
-        return BCrypt.hashpw(password, BCrypt.gensalt(12)); // Hash only ONCE
+        return BCrypt.hashpw(password, BCrypt.gensalt(12)); // Always hash passwords with BCrypt
     }
 
-    // Verify password against stored hash
     public static boolean verifyPassword(String password, String storedHash) {
-        return BCrypt.checkpw(password, storedHash); // Ensure BCrypt is used
+        return BCrypt.checkpw(password, storedHash); // ✅ Correctly verify hashed password
     }
 
-    public static String encryptPassword(String password) {
-        try {
-            SecretKeySpec keySpec = getAESKey();
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
-            byte[] encryptedBytes = cipher.doFinal(password.getBytes("UTF-8"));
-            return Base64.getEncoder().encodeToString(encryptedBytes);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public static String decryptPassword(String encryptedPassword) {
-        try {
-            SecretKeySpec keySpec = getAESKey();
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.DECRYPT_MODE, keySpec);
-            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedPassword));
-            return new String(decryptedBytes, "UTF-8");
-        } catch (BadPaddingException e) {
-            System.err.println("Decryption failed: Incorrect key or corrupt data!"); // Log error
-            return "Decryption Error!";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 }

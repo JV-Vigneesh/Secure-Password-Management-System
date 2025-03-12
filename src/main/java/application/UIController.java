@@ -22,16 +22,14 @@ public class UIController {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        if (AuthManager.authenticateUser(username, password)) {
-            AuthManager.setLoggedInUser(username); // ✅ Store the logged-in user
-            showAlert("Success", "Login successful!", Alert.AlertType.INFORMATION);
+        if (DatabaseHelper.authenticateUser(username, password)) {
+            AuthManager.setLoggedInUser(username); // Store logged-in user
+            showAlert("Login Successful", "Welcome " + username, Alert.AlertType.INFORMATION);
             switchToDashboard();
         } else {
-            showAlert("Error", "Invalid username or password!", Alert.AlertType.ERROR);
+            showAlert("Login Failed", "Invalid credentials", Alert.AlertType.ERROR);
         }
     }
-
-
 
     @FXML
     private void handleRegister(ActionEvent event) {
@@ -76,13 +74,19 @@ public class UIController {
         }
     }
 
+
+
+
     private void switchToDashboard() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/dashboard.fxml"));
             Parent root = loader.load();
 
             DashboardController controller = loader.getController();
-            controller.setLoggedInUser(AuthManager.getLoggedInUser()); // ✅ Pass logged-in user
+            if (controller != null) {
+                controller.setLoggedInUser(AuthManager.getLoggedInUser());
+            }
+
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(root));

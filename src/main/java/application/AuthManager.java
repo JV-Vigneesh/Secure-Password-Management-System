@@ -4,9 +4,9 @@ public class AuthManager {
     private static String loggedInUser = null; // Ensure default is null
 
     public static boolean registerUser(String username, String password) {
-        String hashedPassword = PasswordManager.hashPassword(password);
-        return DatabaseHelper.registerUser(username, hashedPassword);
+        return DatabaseHelper.registerUser(username, password); // ✅ Pass raw password, hash inside DatabaseHelper
     }
+
 
     public static boolean authenticateUser(String username, String password) {
         boolean isAuthenticated = DatabaseHelper.authenticateUser(username, password);
