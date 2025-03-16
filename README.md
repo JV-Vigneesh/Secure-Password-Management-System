@@ -113,6 +113,6 @@ This project is **open-source** and available under the **MIT License**.
 ---
 
 ## **💡 Credits**
-- **Developer:** [Your Name](https://github.com/yourusername)
+- **Developer:** [JV Vigneesh](https://github.com/JV-Vigneesh)
 
 ---
