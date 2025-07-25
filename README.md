@@ -14,6 +14,22 @@ A **secure and efficient** password manager that encrypts and stores credentials
 
 ---
 
+<h3>UI Screenshots</h3>
+
+<table>
+  <tr>
+    <td><img src="images/1.png" alt="UI 1" width="200"/></td>
+    <td><img src="images/2.png" alt="UI 2" width="200"/></td>
+    <td><img src="images/3.png" alt="UI 3" width="400"/></td>
+  </tr>
+</table>
+
+![Screenshot](images/4.png)
+![Screenshot](images/5.png)
+
+
+---
+
 ## **🛠 Technologies Used**
 - **Java (JavaFX)** – User interface.
 - **SQLite** – Local database for storage.
